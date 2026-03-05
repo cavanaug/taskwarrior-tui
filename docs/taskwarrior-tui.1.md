@@ -49,6 +49,12 @@ Keybindings for task report:
 `/`
 : task {string}                     - Filter task report
 
+`r`
+: refresh                            - Refresh task data
+
+`Ctrl-l`
+: redraw                             - Force full screen redraw
+
 `a`
 : task add {string}                 - Add new task
 
@@ -133,6 +139,12 @@ Ctrl-y
 
 
 Keybindings for filter / command prompt:
+
+`Ctrl-r`
+: reset filter                      - Reset filter to default
+
+`Ctrl-r`
+: reset filter                      - Reset filter to default
 
 `Ctrl + f | Right`
 : move forward                      - Move forward one character

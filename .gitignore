@@ -14,3 +14,9 @@ tests/data
 flake.nix
 flake.lock
 .direnv/
+
+# Various AI agent 
+.todos/
+.sidecar/
+.opencode/
+.claude/

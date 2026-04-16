@@ -1,5 +1,7 @@
 use std::{error::Error, process::Command};
 
+use crate::app::task_exe;
+
 use anyhow::Result;
 use chrono::{DateTime, Datelike, Local, NaiveDate, NaiveDateTime, TimeZone};
 use itertools::join;
@@ -180,7 +182,7 @@ impl TaskReportTable {
     let data = if let Some(s) = data {
       s.to_string()
     } else {
-      let output = Command::new("task")
+      let output = Command::new(task_exe())
         .arg("show")
         .arg("rc.defaultwidth=0")
         .arg(format!("report.{}.columns", report))
@@ -197,7 +199,7 @@ impl TaskReportTable {
       }
     }
 
-    let output = Command::new("task")
+    let output = Command::new(task_exe())
       .arg("show")
       .arg("rc.defaultwidth=0")
       .arg(format!("report.{}.labels", report))
@@ -213,7 +215,7 @@ impl TaskReportTable {
       }
     }
 
-    let output = Command::new("task")
+    let output = Command::new(task_exe())
       .arg("show")
       .arg("rc.defaultwidth=0")
       .arg(format!("report.{}.dateformat", report))

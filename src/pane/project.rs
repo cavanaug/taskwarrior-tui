@@ -29,7 +29,7 @@ use uuid::Uuid;
 
 use crate::{
   action::Action,
-  app::{Mode, TaskwarriorTui},
+  app::{task_exe, Mode, TaskwarriorTui},
   event::KeyCode,
   pane::Pane,
   table::TaskwarriorTuiTableState,
@@ -118,7 +118,7 @@ impl ProjectsState {
   pub fn update_data(&mut self) -> Result<()> {
     self.list.clear();
     self.rows.clear();
-    let output = Command::new("task")
+    let output = Command::new(task_exe())
       .arg("summary")
       .output()
       .context("Unable to run `task summary`")

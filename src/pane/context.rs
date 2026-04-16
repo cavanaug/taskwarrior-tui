@@ -29,7 +29,7 @@ use uuid::Uuid;
 
 use crate::{
   action::Action,
-  app::{Mode, TaskwarriorTui},
+  app::{task_exe, Mode, TaskwarriorTui},
   event::KeyCode,
   pane::Pane,
   table::TaskwarriorTuiTableState,
@@ -86,7 +86,7 @@ impl ContextsState {
   }
 
   pub fn update_data(&mut self) -> Result<()> {
-    let output = Command::new("task").arg("context").output()?;
+    let output = Command::new(task_exe()).arg("context").output()?;
     let data = String::from_utf8_lossy(&output.stdout);
 
     self.rows = vec![];

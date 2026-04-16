@@ -66,6 +66,12 @@ lazy_static! {
   static ref TASKWARRIOR_VERSION_SUPPORTED: Versioning = Versioning::new("3.0.0").unwrap();
 }
 
+/// Returns the taskwarrior executable name, honouring the `TASKWARRIOR_EXE`
+/// environment variable (defaults to `"task"`).
+pub fn task_exe() -> String {
+  std::env::var("TASKWARRIOR_EXE").unwrap_or_else(|_| "task".to_string())
+}
+
 #[derive(Debug)]
 pub enum DateState {
   BeforeToday,
@@ -211,7 +217,7 @@ pub struct TaskwarriorTui {
 
 impl TaskwarriorTui {
   pub async fn new(report: &str, init_event_loop: bool) -> Result<Self> {
-    let output = std::process::Command::new("task")
+    let output = std::process::Command::new(task_exe())
       .arg("rc.color=off")
       .arg("rc._forcecolor=off")
       .arg("rc.defaultwidth=0")
@@ -220,7 +226,7 @@ impl TaskwarriorTui {
       .context("Unable to run `task show`.")?;
 
     if !output.status.success() {
-      let output = std::process::Command::new("task")
+      let output = std::process::Command::new(task_exe())
         .arg("diagnostics")
         .output()
         .context("Unable to run `task diagnostics`.")?;
@@ -235,7 +241,7 @@ impl TaskwarriorTui {
     let c = Config::new(&data, report)?;
     let kc = KeyConfig::new(&data)?;
 
-    let output = std::process::Command::new("task")
+    let output = std::process::Command::new(task_exe())
       .arg("--version")
       .output()
       .context("Unable to run `task --version`")?;
@@ -412,12 +418,12 @@ impl TaskwarriorTui {
   }
 
   pub fn get_context(&mut self) -> Result<()> {
-    let output = std::process::Command::new("task").arg("_get").arg("rc.context").output()?;
+    let output = std::process::Command::new(task_exe()).arg("_get").arg("rc.context").output()?;
     self.current_context = String::from_utf8_lossy(&output.stdout).to_string();
     self.current_context = self.current_context.strip_suffix('\n').unwrap_or("").to_string();
 
     // support new format for context
-    let output = std::process::Command::new("task")
+    let output = std::process::Command::new(task_exe())
       .arg("_get")
       .arg(format!("rc.context.{}.read", self.current_context))
       .output()?;
@@ -426,7 +432,7 @@ impl TaskwarriorTui {
 
     // If new format is not used, check if old format is used
     if self.current_context_filter.is_empty() {
-      let output = std::process::Command::new("task")
+      let output = std::process::Command::new(task_exe())
         .arg("_get")
         .arg(format!("rc.context.{}", self.current_context))
         .output()?;
@@ -1416,7 +1422,7 @@ impl TaskwarriorTui {
         debug!("Running task details for {}", task_uuid);
         let _tx = tx.clone();
         tokio::spawn(async move {
-          let output = tokio::process::Command::new("task")
+          let output = tokio::process::Command::new(task_exe())
             .arg("rc.color=off")
             .arg("rc._forcecolor=off")
             .arg(format!("rc.defaultwidth={}", defaultwidth))
@@ -1488,7 +1494,7 @@ impl TaskwarriorTui {
 
   pub fn context_select(&mut self) -> Result<()> {
     let i = self.contexts.table_state.current_selection().unwrap_or_default();
-    let mut command = std::process::Command::new("task");
+    let mut command = std::process::Command::new(task_exe());
     command.arg("context").arg(&self.contexts.rows[i].name);
     command.output()?;
     Ok(())
@@ -1645,7 +1651,7 @@ impl TaskwarriorTui {
   }
 
   pub fn export_all_tasks(&mut self) -> Result<()> {
-    let mut task = std::process::Command::new("task");
+    let mut task = std::process::Command::new(task_exe());
 
     task
       .arg("rc.json.array=on")
@@ -1691,7 +1697,7 @@ impl TaskwarriorTui {
   }
 
   pub fn export_tasks(&mut self) -> Result<()> {
-    let mut task = std::process::Command::new("task");
+    let mut task = std::process::Command::new(task_exe());
 
     task
       .arg("rc.json.array=on")
@@ -1823,7 +1829,7 @@ impl TaskwarriorTui {
   }
 
   pub fn task_log(&mut self) -> Result<(), String> {
-    let mut command = std::process::Command::new("task");
+    let mut command = std::process::Command::new(task_exe());
 
     command.arg("log");
 
@@ -1941,7 +1947,7 @@ impl TaskwarriorTui {
 
     let task_uuids = self.selected_task_uuids();
 
-    let mut command = std::process::Command::new("task");
+    let mut command = std::process::Command::new(task_exe());
     command.arg("rc.bulk=0");
     command.arg("rc.confirmation=off");
     command.arg("rc.dependency.confirmation=off");
@@ -1992,7 +1998,7 @@ impl TaskwarriorTui {
 
     let task_uuids = self.selected_task_uuids();
 
-    let mut command = std::process::Command::new("task");
+    let mut command = std::process::Command::new(task_exe());
     command.arg("rc.bulk=0");
     command.arg("rc.confirmation=off");
     command.arg("rc.dependency.confirmation=off");
@@ -2037,7 +2043,7 @@ impl TaskwarriorTui {
   }
 
   pub fn task_add(&mut self) -> Result<(), String> {
-    let mut command = std::process::Command::new("task");
+    let mut command = std::process::Command::new(task_exe());
     command.arg("add");
 
     let shell = self.command.as_str();
@@ -2071,7 +2077,7 @@ impl TaskwarriorTui {
   }
 
   pub fn task_virtual_tags(task_uuid: Uuid) -> Result<String, String> {
-    let output = std::process::Command::new("task").arg(format!("{}", task_uuid)).output();
+    let output = std::process::Command::new(task_exe()).arg(format!("{}", task_uuid)).output();
 
     match output {
       Ok(output) => {
@@ -2109,7 +2115,7 @@ impl TaskwarriorTui {
         }
       }
 
-      let output = std::process::Command::new("task").arg(task_uuid.to_string()).arg(command).output();
+      let output = std::process::Command::new(task_exe()).arg(task_uuid.to_string()).arg(command).output();
       if output.is_err() {
         return Err(format!("Error running `task {}` for task `{}`.", command, task_uuid));
       }
@@ -2143,7 +2149,7 @@ impl TaskwarriorTui {
           }
         }
 
-        let output = std::process::Command::new("task")
+        let output = std::process::Command::new(task_exe())
           .arg(task_uuid.to_string())
           .arg("modify")
           .arg(tag_to_set)
@@ -2171,7 +2177,7 @@ impl TaskwarriorTui {
 
     let task_uuids = self.selected_task_uuids();
 
-    let mut cmd = std::process::Command::new("task");
+    let mut cmd = std::process::Command::new(task_exe());
     cmd
       .arg("rc.bulk=0")
       .arg("rc.confirmation=off")
@@ -2199,7 +2205,7 @@ impl TaskwarriorTui {
       return Ok(());
     }
     let task_uuids = self.selected_task_uuids();
-    let mut cmd = std::process::Command::new("task");
+    let mut cmd = std::process::Command::new(task_exe());
     cmd
       .arg("rc.bulk=0")
       .arg("rc.confirmation=off")
@@ -2229,7 +2235,7 @@ impl TaskwarriorTui {
     let mut priority_arg = String::from("priority:");
     priority_arg.push_str(priority);
     let task_uuids = self.selected_task_uuids();
-    let mut cmd = std::process::Command::new("task");
+    let mut cmd = std::process::Command::new(task_exe());
     cmd
       .arg("rc.bulk=0")
       .arg("rc.confirmation=off")
@@ -2294,7 +2300,7 @@ impl TaskwarriorTui {
   }
 
   pub fn task_undo(&mut self) -> Result<(), String> {
-    let output = std::process::Command::new("task").arg("rc.confirmation=off").arg("undo").output();
+    let output = std::process::Command::new(task_exe()).arg("rc.confirmation=off").arg("undo").output();
 
     match output {
       Ok(output) => {
@@ -2318,7 +2324,7 @@ impl TaskwarriorTui {
 
     let task_uuids = self.selected_task_uuids();
 
-    let mut command = std::process::Command::new("task");
+    let mut command = std::process::Command::new(task_exe());
     command.arg("rc.bulk=0");
     command.arg("rc.confirmation=off");
     command.arg("rc.dependency.confirmation=off");
@@ -2363,7 +2369,7 @@ impl TaskwarriorTui {
     let task_id = self.tasks[selected].id().unwrap_or_default();
     let task_uuid = *self.tasks[selected].uuid();
 
-    let r = std::process::Command::new("task").arg(format!("{}", task_uuid)).arg("edit").spawn();
+    let r = std::process::Command::new(task_exe()).arg(format!("{}", task_uuid)).arg("edit").spawn();
 
     let r = match r {
       Ok(child) => {
@@ -3951,6 +3957,52 @@ mod tests {
     assert_eq!(p5, "L");
   }
 
+  // ── task_exe() env-var unit tests ────────────────────────────────────
+  // These tests mutate the process environment, so they must NOT run in
+  // parallel with each other.  Use a Mutex to serialise them.
+  mod task_exe_tests {
+    use std::sync::Mutex;
+
+    use super::super::task_exe;
+
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
+
+    #[test]
+    fn task_exe_defaults_to_task() {
+      let _guard = ENV_LOCK.lock().unwrap();
+      unsafe { std::env::remove_var("TASKWARRIOR_EXE") };
+      assert_eq!(task_exe(), "task");
+    }
+
+    #[test]
+    fn task_exe_uses_env_var_when_set() {
+      let _guard = ENV_LOCK.lock().unwrap();
+      unsafe { std::env::set_var("TASKWARRIOR_EXE", "tw") };
+      let result = task_exe();
+      unsafe { std::env::remove_var("TASKWARRIOR_EXE") };
+      assert_eq!(result, "tw");
+    }
+
+    #[test]
+    fn task_exe_uses_arbitrary_path_when_set() {
+      let _guard = ENV_LOCK.lock().unwrap();
+      unsafe { std::env::set_var("TASKWARRIOR_EXE", "/usr/local/bin/task3") };
+      let result = task_exe();
+      unsafe { std::env::remove_var("TASKWARRIOR_EXE") };
+      assert_eq!(result, "/usr/local/bin/task3");
+    }
+
+    #[test]
+    fn task_exe_falls_back_after_var_removed() {
+      let _guard = ENV_LOCK.lock().unwrap();
+      unsafe {
+        std::env::set_var("TASKWARRIOR_EXE", "tw");
+        std::env::remove_var("TASKWARRIOR_EXE");
+      }
+      assert_eq!(task_exe(), "task");
+    }
+  }
+
   #[test]
   fn test_next_priority_down_from_none() {
     assert_eq!(TaskwarriorTui::next_priority_down(None), "H");
@@ -4314,7 +4366,7 @@ mod tests {
     let now = Local::now();
     let now = TimeZone::from_utc_datetime(now.offset(), &now.naive_utc());
 
-    let mut command = std::process::Command::new("task");
+    let mut command = std::process::Command::new(task_exe());
     command.arg("add");
     let tomorrow = now + chrono::Duration::days(1);
     let message = format!(
@@ -4349,7 +4401,7 @@ mod tests {
       }
     }
 
-    let output = std::process::Command::new("task")
+    let output = std::process::Command::new(task_exe())
       .arg("rc.confirmation=off")
       .arg("undo")
       .output()
@@ -4372,7 +4424,7 @@ mod tests {
     let now = Local::now();
     let now = TimeZone::from_utc_datetime(now.offset(), &now.naive_utc());
 
-    let mut command = std::process::Command::new("task");
+    let mut command = std::process::Command::new(task_exe());
     command.arg("add");
     let message = "'new task for testing earlier today' due:now";
 
@@ -4408,7 +4460,7 @@ mod tests {
       assert!(task.tags().unwrap().contains(&s.to_string()));
     }
 
-    let output = std::process::Command::new("task")
+    let output = std::process::Command::new(task_exe())
       .arg("rc.confirmation=off")
       .arg("undo")
       .output()
@@ -4431,7 +4483,7 @@ mod tests {
     let now = Local::now();
     let now = TimeZone::from_utc_datetime(now.offset(), &now.naive_utc());
 
-    let mut command = std::process::Command::new("task");
+    let mut command = std::process::Command::new(task_exe());
     command.arg("add");
     let message = format!(
       "'new task for testing later today' due:'{:04}-{:02}-{:02}T{:02}:{:02}:{:02}'",
@@ -4464,7 +4516,7 @@ mod tests {
       assert!(task.tags().unwrap().contains(&s.to_string()));
     }
 
-    let output = std::process::Command::new("task")
+    let output = std::process::Command::new(task_exe())
       .arg("rc.confirmation=off")
       .arg("undo")
       .output()
@@ -4762,7 +4814,7 @@ mod tests {
     let now = Local::now();
     let now = TimeZone::from_utc_datetime(now.offset(), &now.naive_utc());
 
-    let mut command = std::process::Command::new("task");
+    let mut command = std::process::Command::new(task_exe());
     command.arg("add");
     let message = "'new task 1 for testing draw' priority:U";
 
@@ -4778,7 +4830,7 @@ mod tests {
     let task_id = caps["task_id"].parse::<u64>().unwrap();
     assert_eq!(task_id, total_tasks + 1);
 
-    let mut command = std::process::Command::new("task");
+    let mut command = std::process::Command::new(task_exe());
     command.arg("add");
     let message = "'new task 2 for testing draw' priority:U +none";
 
@@ -4819,12 +4871,12 @@ mod tests {
       })
       .unwrap();
 
-    let output = std::process::Command::new("task")
+    let output = std::process::Command::new(task_exe())
       .arg("rc.confirmation=off")
       .arg("undo")
       .output()
       .unwrap();
-    let output = std::process::Command::new("task")
+    let output = std::process::Command::new(task_exe())
       .arg("rc.confirmation=off")
       .arg("undo")
       .output()
